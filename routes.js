@@ -240,105 +240,6 @@ router.delete('/posts/:pid', async (req, res) => {
   }
 });
 
-// #endregion
-
-// #region  ================投票================
-
-// 進行投票
-router.post('/votes', async (req, res) => {
-  const { uid, pid, side } = req.body; // 接收投票者 ID, 投票 ID, 和選擇的選項 (true 或 false)
-
-  try {
-    // 檢查該用戶是否已對該投票投過票
-    const existingVote = await pool.query(
-      'SELECT * FROM vote_history WHERE uid = $1 AND pid = $2',
-      [uid, pid]
-    );
-
-    if (existingVote.rowCount > 0) {
-      return res.status(400).json({ message: 'User has already voted for this post.' });
-    }
-
-    // 插入投票記錄
-    const result = await pool.query(
-      'INSERT INTO vote_history (uid, pid, side) VALUES ($1, $2, $3) RETURNING *',
-      [uid, pid, side]
-    );
-
-    res.status(201).json({ message: 'Vote recorded successfully', vote: result.rows[0] });
-  } catch (error) {
-    console.error('Error recording vote:', error.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// #endregion
-
-// #region  ================紀錄================
-
-// 根據 pid 查詢所有投票記錄
-router.get('/votes/posts/:pid', async (req, res) => {
-  const { pid } = req.params; // 獲取路徑中的 pid
-  try {
-    // 查詢指定 pid 的所有投票記錄
-    const result = await pool.query(
-      `SELECT 
-         v.vhid, 
-         v.uid, 
-         v.pid, 
-         v.side, 
-         v.create_time, 
-         r.username AS voter_name
-       FROM vote_history v
-       JOIN registers r ON v.uid = r.uid
-       WHERE v.pid = $1
-       ORDER BY v.create_time ASC`,
-      [pid]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: `No votes found for pid ${pid}.` });
-    }
-
-    res.status(200).json(result.rows);
-  } catch (error) {
-    console.error('Error fetching vote history:', error.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// 根據 uid 查詢所有投票記錄
-router.get('/votes/users/:uid', async (req, res) => {
-  const { uid } = req.params; // 獲取路徑中的 uid
-  try {
-    // 查詢指定 uid 的所有投票記錄
-    const result = await pool.query(
-      `SELECT 
-         v.vhid,
-         v.uid,
-         v.pid,
-         v.side,
-         v.create_time,
-         p.title AS post_title,
-         p.problem_content AS post_content
-       FROM vote_history v
-       JOIN post p ON v.pid = p.pid
-       WHERE v.uid = $1
-       ORDER BY v.create_time DESC`,
-      [uid]
-    );
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: `No vote history found for uid ${uid}.` });
-    }
-
-    res.status(200).json(result.rows);
-  } catch (error) {
-    console.error('Error fetching vote history by uid:', error.message);
-    res.status(500).send('Server Error');
-  }
-});
-
 // 根據 uid 查詢所有發文紀錄
 router.get('/posts/user/:uid', async (req, res) => {
   const { uid } = req.params; // 獲取路徑中的 uid
@@ -406,6 +307,276 @@ router.get('/posts/user/:username', async (req, res) => {
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Error fetching posts by username:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// #endregion
+
+// #region  ================投票================
+
+// 進行投票
+router.post('/votes', async (req, res) => {
+  const { uid, pid, side } = req.body; // 接收投票者 ID, 投票 ID, 和選擇的選項 (true 或 false)
+
+  try {
+    // 檢查該用戶是否已對該投票投過票
+    const existingVote = await pool.query(
+      'SELECT * FROM vote_history WHERE uid = $1 AND pid = $2',
+      [uid, pid]
+    );
+
+    if (existingVote.rowCount > 0) {
+      return res.status(400).json({ message: 'User has already voted for this post.' });
+    }
+
+    // 插入投票記錄
+    const result = await pool.query(
+      'INSERT INTO vote_history (uid, pid, side) VALUES ($1, $2, $3) RETURNING *',
+      [uid, pid, side]
+    );
+
+    res.status(201).json({ message: 'Vote recorded successfully', vote: result.rows[0] });
+  } catch (error) {
+    console.error('Error recording vote:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 根據 pid 查詢所有投票記錄
+router.get('/votes/posts/:pid', async (req, res) => {
+  const { pid } = req.params; // 獲取路徑中的 pid
+  try {
+    // 查詢指定 pid 的所有投票記錄
+    const result = await pool.query(
+      `SELECT 
+         v.vhid, 
+         v.uid, 
+         v.pid, 
+         v.side, 
+         v.create_time, 
+         r.username AS voter_name
+       FROM vote_history v
+       JOIN registers r ON v.uid = r.uid
+       WHERE v.pid = $1
+       ORDER BY v.create_time ASC`,
+      [pid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: `No votes found for pid ${pid}.` });
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching vote history:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 根據 uid 查詢所有投票記錄
+router.get('/votes/users/:uid', async (req, res) => {
+  const { uid } = req.params; // 獲取路徑中的 uid
+  try {
+    // 查詢指定 uid 的所有投票記錄
+    const result = await pool.query(
+      `SELECT 
+         v.vhid,
+         v.uid,
+         v.pid,
+         v.side,
+         v.create_time,
+         p.title AS post_title,
+         p.problem_content AS post_content
+       FROM vote_history v
+       JOIN post p ON v.pid = p.pid
+       WHERE v.uid = $1
+       ORDER BY v.create_time DESC`,
+      [uid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: `No vote history found for uid ${uid}.` });
+    }
+
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Error fetching vote history by uid:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 查詢指定 pid 的投票結果
+router.get('/votes/results/:pid', async (req, res) => {
+  const { pid } = req.params; // 獲取路徑中的 pid
+  try {
+    // 查詢兩種 side 的投票總數
+    const result = await pool.query(
+      `SELECT 
+         side, 
+         COUNT(*) AS total_votes
+       FROM vote_history
+       WHERE pid = $1
+       GROUP BY side`,
+      [pid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: `No votes found for pid ${pid}.` });
+    }
+
+    // 將結果轉換為所需格式
+    const voteResults = {
+      pid: parseInt(pid, 10),
+      results: result.rows.reduce((acc, row) => {
+        acc[row.side] = parseInt(row.total_votes, 10);
+        return acc;
+      }, { true: 0, false: 0 }) // 初始化結果為 0
+    };
+
+    res.status(200).json(voteResults);
+  } catch (error) {
+    console.error('Error fetching vote results:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// #endregion
+
+// #region  ================留言================
+
+// 留言
+router.post('/comments', async (req, res) => {
+  const { pid, comment_user, text, anonymous_flag } = req.body;
+
+  try {
+    // 插入留言到 comment 表
+    const result = await pool.query(
+      `INSERT INTO comment (pid, comment_user, text, anonymous_flag)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [pid, comment_user, text, anonymous_flag]
+    );
+
+    res.status(201).json({
+      message: 'Comment added successfully',
+      comment: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error adding comment:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 點讚或倒讚留言
+router.post('/comments/:cid/like', async (req, res) => {
+  const { cid } = req.params; // 留言 ID
+  const { uid, operation } = req.body; // 用戶 ID 和操作 (true: 讚, false: 倒讚)
+
+  try {
+    // 插入或更新 user_comment 表中的互動記錄
+    const result = await pool.query(
+      `INSERT INTO user_comment (uid, cid, operation)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (uid, cid) 
+       DO UPDATE SET operation = EXCLUDED.operation
+       RETURNING *`,
+      [uid, cid, operation]
+    );
+
+    res.status(201).json({
+      message: 'Interaction added or updated successfully',
+      interaction: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error adding interaction:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 取消按讚或倒讚
+router.delete('/comments/:cid/like', async (req, res) => {
+  const { cid } = req.params;
+  const { uid } = req.body;
+
+  try {
+    await pool.query(
+      `DELETE FROM user_comment
+       WHERE uid = $1 AND cid = $2`,
+      [uid, cid]
+    );
+
+    res.status(200).json({ message: 'Interaction removed successfully' });
+  } catch (error) {
+    console.error('Error removing interaction:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 查詢指定 pid 的所有留言
+router.get('/comments/:pid', async (req, res) => {
+  const { pid } = req.params; // 獲取路徑中的 pid
+
+  try {
+    const result = await pool.query(
+      `SELECT 
+         c.cid,
+         c.pid,
+         c.comment_user,
+         r.username AS commenter_name,
+         c.text,
+         c.anonymous_flag,
+         c.create_time
+       FROM comment c
+       JOIN registers r ON c.comment_user = r.uid
+       WHERE c.pid = $1
+       ORDER BY c.create_time ASC`,
+      [pid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: `No comments found for pid ${pid}.` });
+    }
+
+    // 檢查匿名標誌，隱藏匿名留言的 commenter_name
+    const comments = result.rows.map((comment) => ({
+      ...comment,
+      commenter_name: comment.anonymous_flag ? 'Anonymous' : comment.commenter_name
+    }));
+
+    res.status(200).json(comments);
+  } catch (error) {
+    console.error('Error fetching comments:', error.message);
+    res.status(500).send('Server Error');
+  }
+});
+
+// 查詢指定留言的點讚和倒讚數
+router.get('/comments/:cid/votes', async (req, res) => {
+  const { cid } = req.params; // 留言 ID
+
+  try {
+    // 查詢點讚和倒讚數
+    const result = await pool.query(
+      `SELECT 
+         COUNT(*) FILTER (WHERE operation = true) AS upvotes,
+         COUNT(*) FILTER (WHERE operation = false) AS downvotes
+       FROM user_comment
+       WHERE cid = $1`,
+      [cid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: `No votes found for comment ID ${cid}.` });
+    }
+
+    res.status(200).json({
+      cid: cid,
+      upvotes: parseInt(result.rows[0].upvotes, 10) || 0,
+      downvotes: parseInt(result.rows[0].downvotes, 10) || 0
+    });
+  } catch (error) {
+    console.error('Error fetching votes:', error.message);
     res.status(500).send('Server Error');
   }
 });
