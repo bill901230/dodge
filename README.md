@@ -4,8 +4,8 @@ This project is a Node.js application that uses a PostgreSQL database, providing
 ## Installation
 ### 1. Clone the Repository
 ```cmd
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
+git clone https://github.com/bill901230/dodge.git
+cd dodge
 ```
 ### 2. Install Dependencies
 Install the project dependencies using npm:
