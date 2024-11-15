@@ -9,7 +9,7 @@ cd your-repo
 ```
 ### 2. Install Dependencies
 Install the project dependencies using npm:
-```bash
+```cmd
 npm install
 ```
 ### 3. Install PostgreSQL
@@ -18,6 +18,6 @@ Ensure PostgreSQL is installed on your system. You can install it locally or use
 ## Running the Application
 ### Start Locally
 Start the Express application with the following command:
-```bash
+```cmd
 node server.js
 ```
